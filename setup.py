@@ -7,4 +7,9 @@ setup(
     description="A quantitative trade training",
     author="Rogerio Rodrigues", 
     packages=find_packages(),
+    entry_points={
+        "console_scripts": [
+            "trade = trade.__main__:main"
+        ]
+    }
 )
