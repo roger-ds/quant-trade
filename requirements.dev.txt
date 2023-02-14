@@ -1,0 +1,13 @@
+# Dev dependencies
+ipython>=8.0.0,<=8.9.0
+ipdb
+pudb
+
+# Code Qualitly
+flake8
+pyproject-flake8
+black
+isort
+
+# Install project as editable
+-e .
