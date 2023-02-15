@@ -1,4 +1,4 @@
-from trade.core import main
+from trade.cli import main
 
 if __name__ == "__main__":
     main()

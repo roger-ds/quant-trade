@@ -1,4 +1,6 @@
 import MetaTrader5 as mt5
+import pandas as pd
+from trade.settings import SYMBOLS_WATHC, OPTIONS_WATHC
 
 
 def conecta_mt5(conta):
@@ -93,16 +95,8 @@ def market_watch(symbols_mt5, symbols_list):
 
 def set_market_watch(conta):
     symbols_mt5 = get_mt5_symbols(conta)
-    symbols_watch = [
-        "PETR4",
-        "VALE3",
-        "ITUB4",
-        "ITSA4",
-        "BBDC4",
-        "BBAS3",
-        "BOVA11",
-    ]
-    options_watch = ["PETR", "VALE", "ITUB", "ITSA", "BBDC", "BBAS", "BOVA"]
+    symbols_watch = SYMBOLS_WATHC
+    options_watch = OPTIONS_WATHC
     symbols = symbols_to_watch(symbols_mt5, symbols_watch)
     options = options_to_watch(
         symbols_mt5, options_watch, venc_call="C", venc_put="O"

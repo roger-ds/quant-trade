@@ -1,23 +1,13 @@
 # Importa as bibliotecas
-from datetime import date, datetime, timedelta
-
+import time
 import matplotlib.pyplot as plt
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from trade.pymt5 import get_ohlc
+from datetime import date, datetime, timedelta
 from arch import arch_model  # roda o modelo garch
-
-
-def get_ohlc(symbol, timeframe, n=5):
-    # get 10 ativo D1 bars from the current day
-    symbol = mt5.copy_rates_from_pos(symbol, timeframe, 0, n)
-    # create DataFrame out of the obtained data
-    symbol = pd.DataFrame(symbol)
-    # convert time in seconds into the datetime format
-    symbol["time"] = pd.to_datetime(symbol["time"], unit="s")
-    symbol.set_index("time", inplace=True)
-    return symbol
 
 
 def ohlc_to_ascending_df(symbol):
@@ -105,6 +95,10 @@ def garch(symbol):
     forecast_vol = forecast_volatility(gm_fit)
     vols = volatilites(data, gm_vol, forecast_vol)
     vols = vols[["symbol", "close", "hist_volatility", "gm_volatility", "h.1"]]
+
+    vols["hist_volatility"] = vols["hist_volatility"].astype(float).round(4) * 100
+    vols["gm_volatility"] = vols["gm_volatility"].astype(float).round(4) * 100
+    vols["h.1"] = vols["h.1"].astype(float).round(4) * 100
     return vols
 
 
@@ -115,5 +109,5 @@ def volatilitys_df(garch_symbols):
         vols_list.append(vols)
         volatilitys = pd.concat(vols_list)
     vols_list = []
-    time.sleep(1)
+    time.sleep(5)
     return volatilitys
