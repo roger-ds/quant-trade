@@ -109,5 +109,5 @@ def volatilitys_df(garch_symbols):
         vols_list.append(vols)
         volatilitys = pd.concat(vols_list)
     vols_list = []
-    time.sleep(5)
+    time.sleep(3)
     return volatilitys

@@ -1,5 +1,5 @@
 import pkg_resources
-from trade import pymt5, pygarch, settings
+from trade import pymt5, pygarch, settings, core
 import rich_click as click
 from rich.console import Console
 # from rich import print
@@ -25,9 +25,9 @@ def main():
 
 
 @main.command()
-def start():
+def options():
     """Starts MetaTrader5 and set market watch"""
-    pymt5.set_market_watch("BTG")
+    core.start_options()
 
 
 @main.command()
@@ -40,7 +40,7 @@ def garch():
 
         table = Table(title="GARCH Volatility")
         for column in df.columns:
-            table.add_column(column.title(), style="magenta")
+            table.add_column(column.title(), style="bold blue")
 
         for i, row in df.iterrows():
             table.add_row(*[row[0], row[1], row[2], row[3], row[4]])

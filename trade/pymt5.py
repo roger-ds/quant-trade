@@ -1,6 +1,7 @@
 import MetaTrader5 as mt5
 import pandas as pd
 from trade.settings import SYMBOLS_WATHC, OPTIONS_WATHC
+from trade.pyoptions import options
 
 
 def conecta_mt5(conta):
@@ -29,7 +30,7 @@ def conecta_mt5(conta):
         print("initialize() failed, error code =", mt5.last_error())
         mt5.shutdown()
     # request connection status and parameters
-    # print('Informação: trade allowed -', mt5.terminal_info().trade_allowed)
+    print('Informação: trade allowed -', mt5.terminal_info().trade_allowed)
 
 
 def busca_carteira_teorica(indice):
@@ -61,17 +62,15 @@ def symbols_to_watch(symbols_mt5, symbols_watch):
     return symbols_list
 
 
-def options_to_watch(symbols_mt5, options_watch, venc_call, venc_put):
+def options_to_watch(symbols):
     """This function receves a list of symbols to show in mt5 market watch
     also, receves a latter to options dedline"""
-    options_list = []
-    for watch in options_watch:
-        for symbol in symbols_mt5:
-            if symbol.name.startswith(
-                watch + venc_call
-            ) or symbol.name.startswith(watch + venc_put):
-                options_list.append(symbol.name)
-    return options_list
+    last = last_tick(symbols)
+    df_options = pd.DataFrame()
+    for key in last.keys():
+        df = options(key, last[key])
+        df_options = pd.concat([df_options, df])
+    return df_options
 
 
 def market_watch(symbols_mt5, symbols_list):
@@ -89,21 +88,21 @@ def market_watch(symbols_mt5, symbols_list):
                     mt5.shutdown()
                     quit()
             print(symbol.name + "... ok")
-        else:
-            selected = mt5.symbol_select(symbol.name, False)
 
 
-def set_market_watch(conta):
+def set_market_watch_symbols(conta):
     symbols_mt5 = get_mt5_symbols(conta)
-    symbols_watch = SYMBOLS_WATHC
-    options_watch = OPTIONS_WATHC
-    symbols = symbols_to_watch(symbols_mt5, symbols_watch)
-    options = options_to_watch(
-        symbols_mt5, options_watch, venc_call="C", venc_put="O"
-    )
-    market_watch(symbols_mt5, symbols)
-    market_watch(symbols_mt5, options)
-    return symbols, options
+    symbols_list = symbols_to_watch(symbols_mt5, SYMBOLS_WATHC)
+    market_watch(symbols_mt5, symbols_list)
+    return symbols_list
+
+
+def set_market_watch_options(conta):
+    symbols_mt5 = get_mt5_symbols(conta)
+    options_df = options_to_watch(OPTIONS_WATHC)
+    options_list = options_df["option"].to_list()
+    market_watch(symbols_mt5, options_list)
+    return options_df
 
 
 def get_ohlc(symbol, timeframe, n=5):
@@ -136,7 +135,14 @@ def get_book(symbol, data_inicio, n=5):
     return symbol
 
 
-def symbol_tick(symbols):
+def last_tick(symbols):
+    last = {}
+    for symbol in symbols:
+        last[symbol] = mt5.symbol_info_tick(symbol).last
+    return last
+
+
+def tick(symbols):
     """Recives a list of symbols and more eficiently
     Returns a real-time dict for last, bid and ask price"""
     tick = {}
