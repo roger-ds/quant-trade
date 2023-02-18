@@ -1,3 +1,4 @@
+import MetaTrader5 as mt5
 import pandas as pd
 import requests
 
@@ -36,3 +37,12 @@ def options(symbol, spot_price, call_expire = "C", put_expire = "O"):
     (df['strike'] < spot_price + delta)]
     return df
 
+
+def add_realtime_columns(options):
+    """Add RealTime columns to options df"""
+    options["last"] = options.apply(
+        lambda x: mt5.symbol_info_tick(x.option).last, axis =1)
+    options["bid"] = options.apply(
+        lambda x: mt5.symbol_info_tick(x.option).bid, axis =1)
+    options["ask"] = options.apply(
+        lambda x: mt5.symbol_info_tick(x.option).ask, axis =1)

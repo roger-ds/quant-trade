@@ -1,4 +1,5 @@
-from trade import pymt5
+from time import sleep
+from trade import pymt5, pyoptions
 
 
 def start_options():
@@ -7,7 +8,9 @@ def start_options():
     symbols = pymt5.set_market_watch_symbols("BTG")
     options = pymt5.set_market_watch_options("BTG")
 
-    options.reset_index(inplace=True)
-    print(options)
+    while True:
+        pyoptions.add_realtime_columns(options)
+        print(options)
+        sleep(1)
 
 
