@@ -40,9 +40,11 @@ def options(symbol, spot_price, call_expire = "C", put_expire = "O"):
 
 def add_realtime_columns(options):
     """Add RealTime columns to options df"""
-    options["last"] = options.apply(
-        lambda x: mt5.symbol_info_tick(x.option).last, axis =1)
     options["bid"] = options.apply(
         lambda x: mt5.symbol_info_tick(x.option).bid, axis =1)
     options["ask"] = options.apply(
         lambda x: mt5.symbol_info_tick(x.option).ask, axis =1)
+    options["med"] = round((options["bid"] + options["ask"]) /2, 2)
+    options["last"] = options.apply(
+        lambda x: mt5.symbol_info_tick(x.option).last, axis =1)
+    options.reset_index(drop=True, inplace=True)
