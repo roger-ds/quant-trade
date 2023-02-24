@@ -1,7 +1,7 @@
 import MetaTrader5 as mt5
 import pandas as pd
 from trade.settings import SYMBOLS_WATHC, OPTIONS_WATHC
-from trade.pyoptions import options
+from trade.pyoptions import get_options_net_br
 
 
 def conecta_mt5(conta):
@@ -68,13 +68,14 @@ def options_to_watch(symbols):
     last = last_tick(symbols)
     df_options = pd.DataFrame()
     for key in last.keys():
-        df = options(key, last[key])
+        df = get_options_net_br(key, last[key])
         df_options = pd.concat([df_options, df])
     return df_options
 
 
 def market_watch(symbols_mt5, symbols_list):
     """Puts symbols and options in maket watch"""
+    symbols_to_remove = []
     symbols = symbols_mt5
     for symbol in symbols:
         if symbol.name in symbols_list:
@@ -85,23 +86,27 @@ def market_watch(symbols_mt5, symbols_list):
                 selected = mt5.symbol_select(symbol.name, True)
                 if not selected:
                     print("Failed to select " + symbol.name)
-                    mt5.shutdown()
-                    quit()
+                    symbols_to_remove.append(symbol.name)
+                    #mt5.shutdown()
+                    #quit()
             print(symbol.name + "... ok")
+    return symbols_to_remove
 
 
 def set_market_watch_symbols(conta):
     symbols_mt5 = get_mt5_symbols(conta)
     symbols_list = symbols_to_watch(symbols_mt5, SYMBOLS_WATHC)
-    market_watch(symbols_mt5, symbols_list)
-    return symbols_list
+    symbols_remove = market_watch(symbols_mt5, symbols_list)
+    symbols_to_list = [symbol not in symbols_remove for symbol in symbols_list]
+    return symbols_to_list
 
 
 def set_market_watch_options(conta):
     symbols_mt5 = get_mt5_symbols(conta)
     options_df = options_to_watch(OPTIONS_WATHC)
     options_list = options_df["option"].to_list()
-    market_watch(symbols_mt5, options_list)
+    symbos_remove = market_watch(symbols_mt5, options_list)
+    options_df = options_df[~options_df.option.isin(symbos_remove)]
     return options_df
 
 
