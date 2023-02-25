@@ -5,7 +5,7 @@ import requests
 import pprint
 from scipy.stats import norm
 from py_vollib.black_scholes import black_scholes as bs
-from py_vollib.black_scholes.greeks.analytical import vega, theta, rho
+from py_vollib.black_scholes.greeks.analytical import vega
 
 pd.set_option('display.max_columns', 20)  # or 1000
 pd.set_option('display.max_rows', 400)  # or 1000
@@ -81,7 +81,7 @@ def implied_vol(S0, K, market_price, flag="c", T=15/252, r=0.1365, tol=0.00001):
 
 
 def delta_calc(S, K, sigma, type_="c", T=15/252, r=0.1365):
-    "Calculate delta of an option"
+    """Calculate delta of an option"""
     d1 = (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
     if type_ == "c":
         delta_calc = norm.cdf(d1, 0, 1)
@@ -90,31 +90,42 @@ def delta_calc(S, K, sigma, type_="c", T=15/252, r=0.1365):
     return delta_calc 
 
 
-def gamma_calc(S, K, sigma, type_="c", T=15/252, r=0.1365):
-    "Calculate gamma of a option"
+def gamma_calc(S, K, sigma, T=15/252, r=0.1365):
+    """Calculate gamma of a option"""
     d1 = (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
     d2 = d1 - sigma*np.sqrt(T)
     gamma_calc = norm.pdf(d1, 0, 1)/(S*sigma*np.sqrt(T))
     return gamma_calc
 
 
-# def vega(S, K, sigma, type_="c", T=16/252, r=0.1365):
-#     "Calculate BS price of call/put"
-#     d1 = (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
-#     d2 = d1 - sigma*np.sqrt(T)
-#     vega_calc = S*norm.pdf(d1, 0, 1)*np.sqrt(T)
-#     return vega_calc*0.01, vega(type_, S, K, T, r, sigma)
+def vega_calc(S, K, sigma, T=15/252, r=0.1365):
+    """Calculate Vega price of call/put option"""
+    d1 = (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
+    d2 = d1 - sigma*np.sqrt(T)
+    vega_calc = S*norm.pdf(d1, 0, 1)*np.sqrt(T)
+    return vega_calc*0.01
 
 
-# def theta(S, K, sigma, type_="c", T=16/252, r=0.1365):
-#     "Calculate BS price of call/put"
-#     d1 = (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
-#     d2 = d1 - sigma*np.sqrt(T)
-#     if type_ == "c":
-#         theta_calc = -S*norm.pdf(d1, 0, 1)*sigma/(2*np.sqrt(T)) - r*K*np.exp(-r*T)*norm.cdf(d2, 0, 1)
-#     elif type_ == "p":
-#         theta_calc = -S*norm.pdf(d1, 0, 1)*sigma/(2*np.sqrt(T)) + r*K*np.exp(-r*T)*norm.cdf(-d2, 0, 1)
-#     return theta_calc/365, theta(type_, S, K, T, r, sigma)
+def theta_calc(S, K, sigma, type_="c", T=15/252, r=0.1365):
+    """Calculate Theta price of call/put option"""
+    d1 = (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
+    d2 = d1 - sigma*np.sqrt(T)
+    if type_ == "c":
+        theta_calc = -S*norm.pdf(d1, 0, 1)*sigma/(2*np.sqrt(T)) - r*K*np.exp(-r*T)*norm.cdf(d2, 0, 1)
+    elif type_ == "p":
+        theta_calc = -S*norm.pdf(d1, 0, 1)*sigma/(2*np.sqrt(T)) + r*K*np.exp(-r*T)*norm.cdf(-d2, 0, 1)
+    return theta_calc/252
+
+
+def rho_calc(S, K, sigma, type_="c", T=15/252, r=0.1365):
+    "Calculate BS price of call/put"
+    d1 = (np.log(S/K) + (r + sigma**2/2)*T)/(sigma*np.sqrt(T))
+    d2 = d1 - sigma*np.sqrt(T)
+    if type_ == "c":
+        rho_calc = K*T*np.exp(-r*T)*norm.cdf(d2, 0, 1)
+    elif type_ == "p":
+        rho_calc = -K*T*np.exp(-r*T)*norm.cdf(-d2, 0, 1)
+    return rho_calc*0.01
 
 
 def add_realtime_columns(options):
@@ -142,17 +153,43 @@ def add_realtime_columns(options):
     options.dropna(inplace=True)
     options["vol_med"] = round(
         (options["vol_bid"] + options["vol_ask"]) / 2, 2)
-    options["delta"] = round(options.apply(
-        lambda x: delta_calc(x.spot_med, x.strike, x.vol_med, x.type),axis=1)*100,2)
-    options["gamma"] = round(options.apply(
-        lambda x: gamma_calc(x.spot_med,x.strike,x.vol_med,x.type),axis=1)*100,2)
-    # options["vega"] = round(options.apply(
-    #     lambda x: vega(x.spot_med,x.strike,x.vol_med,x.type)[0],axis=1)*100,2)
+    options.reset_index(drop=True, inplace=True)
     options = options[
         ['model','option','type','expiration','strike','bid','ask','med',
         'last','symbol','spot_bid','spot_ask','spot_med','spot_last',
-        'vol_bid','vol_ask','vol_med','delta','gamma']
-        ]
-    #options.reset_index(drop=True, inplace=True)
-    print(options)
+        'vol_bid','vol_ask','vol_med']
+    ]
     return(options)
+
+
+def add_greeks(options):
+    greeks = options.copy()
+    greeks["delta"] = round(greeks.apply(
+        lambda x: delta_calc(
+            x.spot_med, x.strike, x.vol_med / 100, type_=x.type),axis=1)*100, 2)
+    greeks["gamma"] = round(greeks.apply(
+        lambda x: gamma_calc(x.spot_med, x.strike, x.vol_med /100), axis=1), 2)
+    greeks["vega"] = round(greeks.apply(
+        lambda x: vega_calc(
+            x.spot_med, x.strike, x.vol_med / 100), axis=1)*100,2)
+    greeks["theta"] = round(greeks.apply(
+        lambda x: theta_calc(
+            x.spot_med, x.strike, x.vol_med / 100, type_=x.type),axis=1), 2)
+    greeks["rho"] = round(greeks.apply(
+        lambda x: rho_calc(
+            x.spot_med, x.strike, x.vol_med / 100, type_=x.type),axis=1)*100, 2)
+    print(greeks)
+    return greeks
+
+
+# def add_greeks(options):
+#     greeks = options.copy()
+#     print(greeks)
+#     greeks["delta"] = round(greeks.apply(
+#         lambda x: delta_calc(x.spot_med, x.strike, x.vol_med, x.type),axis=1)*100,2)
+#     greeks["gamma"] = round(greeks.apply(
+#         lambda x: gamma_calc(x.spot_med,x.strike,x.vol_med,x.type),axis=1)*100,2)
+#     # options["vega"] = round(options.apply(
+#     #     lambda x: vega(x.spot_med,x.strike,x.vol_med,x.type)[0],axis=1)*100,2)
+#     print(greeks)
+#     return greeks
