@@ -1,4 +1,8 @@
+MetaTrader5
+pandas
 click
 rich
 rich-click
-mibian
+workadays
+scipy
+py_vollib

@@ -2,7 +2,8 @@ import MetaTrader5 as mt5
 import pandas as pd
 import numpy as np
 import requests
-import pprint
+import datetime as dt
+from workadays import workdays as wd
 from scipy.stats import norm
 from py_vollib.black_scholes import black_scholes as bs
 from py_vollib.black_scholes.greeks.analytical import vega
@@ -35,6 +36,13 @@ def list_all_options(symbol):
     return df
 
 
+def expiration_date(expiration):
+    d1 = dt.date.today()
+    y, m, d = list(map(int, expiration.split("-")))
+    d2 = dt.date(y, m, d)
+    return wd.networkdays(d1, d2, country='BR', state='SP')
+
+
 def get_options_net_br(symbol, spot_price, call_expire = "C", put_expire = "O"):
     """Returns a df with options that strike is aroud 10 % spot price on
     given expirations dates"""
@@ -42,6 +50,7 @@ def get_options_net_br(symbol, spot_price, call_expire = "C", put_expire = "O"):
     delta = spot_price * 0.1
     df = list_all_options(symbol)
     df['type'] = df.apply(lambda x: "c" if x.type == "CALL" else "p", axis=1)
+    df['expires'] = df.apply(lambda x: expiration_date(x.expiration), axis=1)
     df['symbol'] = symbol
     df = df[(df['option'].str.contains(option + call_expire)) |
     (df['option'].str.contains(option + put_expire))]
@@ -155,9 +164,9 @@ def add_realtime_columns(options):
         (options["vol_bid"] + options["vol_ask"]) / 2, 2)
     options.reset_index(drop=True, inplace=True)
     options = options[
-        ['model','option','type','expiration','strike','bid','ask','med',
-        'last','symbol','spot_bid','spot_ask','spot_med','spot_last',
-        'vol_bid','vol_ask','vol_med']
+        ['model','option','type','expiration','expires','strike','bid',
+        'ask','med','last','symbol','spot_bid','spot_ask','spot_med',
+        'spot_last','vol_bid','vol_ask','vol_med']
     ]
     return(options)
 
