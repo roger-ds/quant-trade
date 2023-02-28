@@ -11,7 +11,6 @@ def start_options():
 
     while True:
         options = pyoptions.add_realtime_columns(options_net_br)
-        greeks = pyoptions.add_greeks(options)
 
         sleep(.1)
 

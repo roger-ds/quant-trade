@@ -103,7 +103,7 @@ def set_market_watch_symbols(conta):
 
 def set_market_watch_options(conta):
     symbols_mt5 = get_mt5_symbols(conta)
-    options_df = options_to_watch(OPTIONS_WATHC)
+    options_df = options_to_watch(OPTIONS_WATHC[0:2])
     options_list = options_df["option"].to_list()
     symbos_remove = market_watch(symbols_mt5, options_list)
     options_df = options_df[~options_df.option.isin(symbos_remove)]
